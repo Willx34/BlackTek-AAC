@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\CompleteSocialiteRequest;
 use App\Models\AuthProvider;
+use App\Models\User;
 use App\Services\UserRegistrationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
@@ -26,20 +27,44 @@ class SocialiteController extends Controller
     {
         try {
             $socialUser = Socialite::driver($provider)->user();
-
             $authProvider = AuthProvider::findByProvider($provider, $socialUser->getId());
 
             if ($authProvider) {
-                $authProvider->update([
+                $updatedProvider = AuthProvider::updateOrCreateProvider(
+                    $authProvider->user_id,
+                    $provider,
+                    $socialUser->getId(),
+                    [
+                        'nickname' => $socialUser->getNickname() ?? $socialUser->getName(),
+                        'avatar' => $socialUser->getAvatar(),
+                        'token' => $socialUser->token,
+                    ]
+                );
+                Auth::login($updatedProvider->user);
+                return redirect()->intended('/')->with('flash', [
+                    'success',
+                    'Your account has been linked with ' . ucfirst($provider)
+                ]);
+            }
+
+            $existingUser = User::where('email', $socialUser->getEmail())->first();
+
+            if ($existingUser) {
+                AuthProvider::create([
+                    'user_id' => $existingUser->id,
+                    'provider' => $provider,
                     'nickname' => $socialUser->getNickname() ?? $socialUser->getName(),
                     'avatar' => $socialUser->getAvatar(),
+                    'provider_id' => $socialUser->getId(),
                     'token' => $socialUser->token,
                     'login_at' => now(),
                 ]);
 
-                Auth::login($authProvider->user);
-
-                return redirect()->intended('/');
+                Auth::login($existingUser);
+                return redirect()->intended('/')->with('flash', [
+                    'success',
+                    'Your account has been linked with ' . ucfirst($provider)
+                ]);
             }
 
             session()->put('socialite_data', [
@@ -53,7 +78,10 @@ class SocialiteController extends Controller
 
             return redirect()->route('auth.socialite.complete');
         } catch (\Exception $e) {
-            return redirect()->route('login')->with('error', 'Authentication error with '.ucfirst($provider));
+            return redirect()->route('login')->with('flash', [
+                'error',
+                'Authentication error with ' . ucfirst($provider)
+            ]);
         }
     }
 
@@ -62,7 +90,10 @@ class SocialiteController extends Controller
         $socialiteData = session()->get('socialite_data');
 
         if (! $socialiteData) {
-            return redirect()->route('login')->with('error', 'Authentication data not found');
+            return redirect()->route('login')->with('flash', [
+                'error',
+                'Authentication data not found'
+            ]);
         }
 
         return Inertia::render('auth/complete-socialite', [
@@ -75,7 +106,10 @@ class SocialiteController extends Controller
         $socialiteData = session()->get('socialite_data');
 
         if (! $socialiteData) {
-            return redirect()->route('login')->with('error', 'Authentication data not found');
+            return redirect()->route('login')->with('flash', [
+                'error',
+                'Authentication data not found'
+            ]);
         }
 
         $user = $this->userRegistrationService->createUserWithProvider(

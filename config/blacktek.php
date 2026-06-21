@@ -28,16 +28,15 @@ return [
     'characters' => [
         'max_per_account' => 10,
         'new' => [
-            'level' => 8,
-            'health' => 185,
-            'mana' => 90,
-            'cap' => 470,
+            'level' => 1,
+            'health' => 150,
+            'mana' => 0,
+            'cap' => 400,
             'soul' => 100,
             'vocations' => [
-                '1' => 'Sorcerer',
-                '2' => 'Druid',
-                '3' => 'Paladin',
-                '4' => 'Knight',
+                // Rookgaard newbie start: vocationless ("Rook"). Vocations chosen
+                // on leaving Rookgaard later. (Whole vocation set to be retuned.)
+                '0' => 'None',
             ],
             'towns' => [
                 '6' => 'Rookgaard',

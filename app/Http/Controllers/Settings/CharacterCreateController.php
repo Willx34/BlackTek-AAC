@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Settings;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Settings\CharacterCreateRequest;
 use App\Models\Player;
+use App\Models\Town;
 use App\Services\PlayerValidationService;
 use Illuminate\Http\RedirectResponse;
 use Inertia\Inertia;
@@ -52,12 +53,19 @@ class CharacterCreateController extends Controller
 
         $validated = $request->validated();
 
+        // Spawn the new character at the chosen town's temple position
+        // (sourced from the map's town data so it always matches the loaded map).
+        $town = Town::findOrFail($validated['town_id']);
+
         Player::create([
             'account_id' => $account->id,
             'name' => $validated['name'],
             'sex' => $validated['sex'],
             'vocation' => $validated['vocation'],
-            'town_id' => $validated['town_id'],
+            'town_id' => $town->id,
+            'posx' => $town->posx,
+            'posy' => $town->posy,
+            'posz' => $town->posz,
             ...Player::getDefaultOutfit($validated['sex']),
             ...Player::getNewPlayerDefaults(),
         ]);

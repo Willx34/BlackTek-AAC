@@ -40,7 +40,9 @@ return [
                 '4' => 'Knight',
             ],
             'towns' => [
-                '1' => 'Trekolt',
+                '2' => 'Thais',
+                '4' => 'Carlin',
+                '1' => 'Venore',
             ],
             'sex' => [
                 '0' => 'female',
